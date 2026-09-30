@@ -1,7 +1,3 @@
-#Revisei os mapas com base em curvas reais de motores 2 tempos de arrancada (padrão brasileiro + referências de CDI programável). A curva agora sobe rápido no meio e atrasa no alto giro, como deve ser.Também adicionei:
-#Gráfico de Avanço (°) × Tempo (s) em janela modal (abre durante a puxada)
-#Fundo com imagem de moto de arrancada + overlay escuro para legibilidade
-
 from flask import Flask, jsonify, request, render_template_string
 import os
 
@@ -9,13 +5,6 @@ app = Flask(__name__)
 
 DWELL_US = 3000
 MAX_RPM = 11000
-
-# ====================== MAPAS REAIS DE 2 TEMPOS ======================
-# Baseado em curvas típicas de CDI programável para arrancada 2T
-# Gasolina: curva clássica (sobe no meio, atrasa no alto)
-# Etanol: +3,5° a partir de ~2000 rpm (queima mais lenta)
-# Podium: +1,5° a 2° (melhor octanagem)
-# Metanol: +5° a 6° (muito mais lento + alta octanagem)
 
 FUEL_MAPS = {
     "gasolina": {
@@ -75,7 +64,7 @@ HTML_INTERFACE = """
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body {
-            background: linear-gradient(rgba(11, 14, 20, 0.88), rgba(11, 14, 20, 0.92)),
+            background: linear-gradient(rgba(11, 14, 20, 0.55), rgba(11, 14, 20, 0.65)),
                         url('https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
             background-size: cover;
             color: #c9d1d9;
@@ -83,108 +72,116 @@ HTML_INTERFACE = """
             min-height: 100vh; padding: 20px 0; overflow-y: auto;
         }
         .container {
-            position: relative; background: rgba(17, 22, 30, 0.92);
-            backdrop-filter: blur(14px); border: 1px solid rgba(56, 139, 253, 0.25);
-            border-radius: 20px; padding: 30px; width: 92%; max-width: 560px;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.75);
+            position: relative; background: rgba(17, 22, 30, 0.88);
+            backdrop-filter: blur(12px); border: 1px solid rgba(56, 139, 253, 0.25);
+            border-radius: 20px; padding: 28px; width: 92%; max-width: 540px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+            z-index: 10;
         }
         h1 {
-            font-size: 1.55rem; color: #58a6ff; text-align: center; margin-bottom: 22px;
-            text-transform: uppercase; letter-spacing: 1.5px;
-            text-shadow: 0 0 12px rgba(88, 166, 255, 0.35);
+            font-size: 1.5rem; color: #58a6ff; text-align: center; margin-bottom: 20px;
+            text-transform: uppercase; letter-spacing: 1.4px;
+            text-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
         }
         h2 {
-            font-size: 1.05rem; color: #f0883e; margin-bottom: 14px;
+            font-size: 1.05rem; color: #f0883e; margin-bottom: 12px;
             text-transform: uppercase; border-left: 3px solid #f0883e; padding-left: 8px;
         }
         .panel {
-            background: rgba(30, 37, 48, 0.55); border: 1px solid #30363d;
-            border-radius: 12px; padding: 18px; margin-bottom: 20px;
+            background: rgba(30, 37, 48, 0.5); border: 1px solid #30363d;
+            border-radius: 12px; padding: 16px; margin-bottom: 18px;
         }
-        .control-group { margin-bottom: 12px; }
-        label { display: block; font-size: 0.85rem; margin-bottom: 6px; color: #8b949e; }
+        .control-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.85rem; margin-bottom: 5px; color: #8b949e; }
         .rpm-display {
-            font-size: 2.3rem; font-weight: bold; color: #58a6ff;
-            text-align: center; margin-bottom: 10px; font-family: 'Courier New', Courier, monospace;
+            font-size: 2.2rem; font-weight: bold; color: #58a6ff;
+            text-align: center; margin-bottom: 8px; font-family: 'Courier New', Courier, monospace;
         }
         input[type="range"] {
             width: 100%; height: 8px; border-radius: 5px; background: #21262d;
             outline: none; -webkit-appearance: none;
         }
         input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 22px; height: 22px;
+            -webkit-appearance: none; width: 20px; height: 20px;
             border-radius: 50%; background: #58a6ff; cursor: pointer;
         }
         .auto-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px;
         }
         .input-field input {
             width: 100%; background: #0d1117; border: 1px solid #30363d;
-            border-radius: 6px; padding: 8px; color: #c9d1d9; text-align: center; font-size: 0.95rem;
+            border-radius: 6px; padding: 7px; color: #c9d1d9; text-align: center; font-size: 0.95rem;
         }
         .btn {
             width: 100%; background: #238636; color: white; border: none;
-            border-radius: 6px; padding: 12px; font-size: 1rem; font-weight: bold;
+            border-radius: 6px; padding: 11px; font-size: 0.95rem; font-weight: bold;
             cursor: pointer; text-transform: uppercase; transition: 0.2s;
         }
-        .btn:hover { filter: brightness(1.12); }
+        .btn:hover { filter: brightness(1.1); }
         .btn.stop { background: #da3633; }
 
         .fuel-grid {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 6px;
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
         }
         .fuel-btn {
-            background: #0d1117; border: 2px solid #30363d; border-radius: 12px;
-            padding: 10px 4px; cursor: pointer; text-align: center; transition: all 0.2s;
+            background: #0d1117; border: 2px solid #30363d; border-radius: 10px;
+            padding: 9px 4px; cursor: pointer; text-align: center; transition: all 0.2s;
             color: #8b949e;
         }
-        .fuel-btn:hover { border-color: #58a6ff; transform: translateY(-2px); }
+        .fuel-btn:hover { border-color: #58a6ff; transform: translateY(-1px); }
         .fuel-btn.active {
             border-color: var(--fuel-color); background: rgba(88, 166, 255, 0.12);
-            color: #c9d1d9; box-shadow: 0 0 12px rgba(88, 166, 255, 0.25);
+            color: #c9d1d9; box-shadow: 0 0 10px rgba(88, 166, 255, 0.2);
         }
-        .fuel-icon { font-size: 1.7rem; display: block; margin-bottom: 3px; }
-        .fuel-name { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; }
+        .fuel-icon { font-size: 1.6rem; display: block; margin-bottom: 2px; }
+        .fuel-name { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
 
         .results {
-            background: rgba(1, 4, 9, 0.75); border-radius: 12px; padding: 18px; border: 1px solid #30363d;
+            background: rgba(1, 4, 9, 0.7); border-radius: 12px; padding: 16px; border: 1px solid #30363d;
         }
         .result-item {
-            display: flex; justify-content: space-between; padding: 9px 0;
-            border-bottom: 1px solid rgba(48, 54, 61, 0.5); font-size: 0.95rem;
+            display: flex; justify-content: space-between; padding: 8px 0;
+            border-bottom: 1px solid rgba(48, 54, 61, 0.45); font-size: 0.92rem;
         }
         .result-item:last-child { border-bottom: none; }
         .label { color: #8b949e; }
         .value { font-weight: bold; color: #f0883e; font-family: monospace; }
         .status-badge {
-            display: inline-block; padding: 4px 10px; border-radius: 6px;
-            font-size: 0.78rem; font-weight: bold;
+            display: inline-block; padding: 3px 9px; border-radius: 5px;
+            font-size: 0.75rem; font-weight: bold;
         }
         .status-running { background: #238636; color: white; }
         .status-limit { background: #da3633; color: white; }
         .status-auto { background: #8957e5; color: white; }
 
-        /* Modal do gráfico */
-        .modal {
-            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
-            width: 100%; height: 100%; background: rgba(0,0,0,0.75);
-            backdrop-filter: blur(6px); justify-content: center; align-items: center;
+        /* Painel flutuante do gráfico (~30-40% da tela) */
+        .chart-panel {
+            display: none;
+            position: fixed;
+            bottom: 18px;
+            right: 18px;
+            width: 38%;
+            min-width: 320px;
+            max-width: 480px;
+            background: rgba(17, 22, 30, 0.82);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(88, 166, 255, 0.35);
+            border-radius: 14px;
+            padding: 14px 16px 12px;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.45);
         }
-        .modal.show { display: flex; }
-        .modal-content {
-            background: #11161e; border: 1px solid #30363d; border-radius: 16px;
-            padding: 20px; width: 92%; max-width: 700px; position: relative;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+        .chart-panel.show { display: block; }
+        .chart-panel h3 {
+            color: #58a6ff; font-size: 0.95rem; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .modal-content h3 {
-            color: #58a6ff; margin-bottom: 15px; text-align: center; font-size: 1.2rem;
+        .chart-panel .close-btn {
+            background: none; border: none; color: #8b949e; font-size: 1.3rem;
+            cursor: pointer; line-height: 1;
         }
-        .close-modal {
-            position: absolute; top: 12px; right: 16px; background: none; border: none;
-            color: #8b949e; font-size: 1.6rem; cursor: pointer;
-        }
-        .close-modal:hover { color: #f0883e; }
-        #chartCanvas { max-height: 340px; }
+        .chart-panel .close-btn:hover { color: #f0883e; }
+        #chartCanvas { max-height: 220px; width: 100% !important; }
     </style>
 </head>
 <body>
@@ -216,8 +213,8 @@ HTML_INTERFACE = """
         <div class="panel">
             <h2>Controle Manual</h2>
             <div class="control-group">
-                <div class="rpm-display" id="rpmValue">1000 RPM</div>
-                <input type="range" id="rpmSlider" min="800" max="12000" step="50" value="1000">
+                <div class="rpm-display" id="rpmValue">2000 RPM</div>
+                <input type="range" id="rpmSlider" min="800" max="12000" step="50" value="2000">
             </div>
         </div>
 
@@ -230,7 +227,7 @@ HTML_INTERFACE = """
                 </div>
                 <div class="input-field">
                     <label>Tempo (s)</label>
-                    <input type="number" id="runTime" value="5" step="0.5">
+                    <input type="number" id="runTime" value="2.5" step="0.5">
                 </div>
                 <div class="input-field">
                     <label>Giro Final</label>
@@ -265,27 +262,26 @@ HTML_INTERFACE = """
         </div>
     </div>
 
-    <!-- Modal do Gráfico -->
-    <div class="modal" id="chartModal">
-        <div class="modal-content">
-            <button class="close-modal" id="closeModal">&times;</button>
-            <h3>Avanço de Ignição × Tempo</h3>
-            <canvas id="chartCanvas"></canvas>
-        </div>
+    <!-- Painel flutuante do gráfico (sobreposto ~30-40%) -->
+    <div class="chart-panel" id="chartPanel">
+        <h3>
+            <span>Avanço × Tempo</span>
+            <button class="close-btn" id="closeChart">×</button>
+        </h3>
+        <canvas id="chartCanvas"></canvas>
     </div>
 
     <script>
         const slider = document.getElementById('rpmSlider');
         const rpmValue = document.getElementById('rpmValue');
         const btnTrigger = document.getElementById('btnTrigger');
-        const chartModal = document.getElementById('chartModal');
-        const closeModal = document.getElementById('closeModal');
+        const chartPanel = document.getElementById('chartPanel');
+        const closeChart = document.getElementById('closeChart');
         let autoInterval = null;
         let currentFuel = "gasolina";
         let chartInstance = null;
         let chartData = { labels: [], values: [] };
 
-        // Seleção de combustível
         document.querySelectorAll('.fuel-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.fuel-btn').forEach(b => b.classList.remove('active'));
@@ -298,11 +294,8 @@ HTML_INTERFACE = """
             });
         });
 
-        closeModal.addEventListener('click', () => {
-            chartModal.classList.remove('show');
-        });
-        chartModal.addEventListener('click', (e) => {
-            if (e.target === chartModal) chartModal.classList.remove('show');
+        closeChart.addEventListener('click', () => {
+            chartPanel.classList.remove('show');
         });
 
         function updateMetrics(rpm) {
@@ -347,9 +340,9 @@ HTML_INTERFACE = """
                         label: 'Avanço (°)',
                         data: chartData.values,
                         borderColor: '#58a6ff',
-                        backgroundColor: 'rgba(88, 166, 255, 0.15)',
-                        borderWidth: 2.5,
-                        pointRadius: 3,
+                        backgroundColor: 'rgba(88, 166, 255, 0.12)',
+                        borderWidth: 2,
+                        pointRadius: 2.5,
                         pointBackgroundColor: '#f0883e',
                         tension: 0.25,
                         fill: true
@@ -357,23 +350,24 @@ HTML_INTERFACE = """
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: true,
                     animation: { duration: 0 },
                     scales: {
                         x: {
-                            title: { display: true, text: 'Tempo (s)', color: '#8b949e' },
-                            ticks: { color: '#8b949e' },
-                            grid: { color: 'rgba(48,54,61,0.5)' }
+                            title: { display: true, text: 'Tempo (s)', color: '#8b949e', font: { size: 11 } },
+                            ticks: { color: '#8b949e', font: { size: 10 } },
+                            grid: { color: 'rgba(48,54,61,0.4)' }
                         },
                         y: {
-                            title: { display: true, text: 'Avanço (° BTDC)', color: '#8b949e' },
-                            ticks: { color: '#8b949e' },
-                            grid: { color: 'rgba(48,54,61,0.5)' },
+                            title: { display: true, text: '° BTDC', color: '#8b949e', font: { size: 11 } },
+                            ticks: { color: '#8b949e', font: { size: 10 } },
+                            grid: { color: 'rgba(48,54,61,0.4)' },
                             suggestedMin: 10,
                             suggestedMax: 35
                         }
                     },
                     plugins: {
-                        legend: { labels: { color: '#c9d1d9' } }
+                        legend: { display: false }
                     }
                 }
             });
@@ -408,9 +402,8 @@ HTML_INTERFACE = """
                 return;
             }
 
-            // Reset do gráfico
             chartData = { labels: [], values: [] };
-            chartModal.classList.add('show');
+            chartPanel.classList.add('show');
             createChart();
 
             const fps = 20;
@@ -430,7 +423,7 @@ HTML_INTERFACE = """
                 const data = await updateMetrics(currentRpm);
                 if (data) {
                     chartData.labels.push(timeSec);
-                    chartData.values.push(data.advance.toFixed(2));
+                    chartData.values.push(parseFloat(data.advance.toFixed(2)));
                     if (chartInstance) {
                         chartInstance.data.labels = chartData.labels;
                         chartInstance.data.datasets[0].data = chartData.values;
@@ -447,8 +440,7 @@ HTML_INTERFACE = """
             }, intervalTime);
         });
 
-        // Inicializa
-        updateMetrics(1000);
+        updateMetrics(2000);
     </script>
 </body>
 </html>
