@@ -16,14 +16,13 @@ def get_advance_from_map(rpm):
         return advanceMap[0]
     if rpm >= rpmMap[-1]:
         return advanceMap[-1]
-        
+
     for i in range(len(rpmMap) - 1):
-        if rpmMap[i] <= rpm <= rpmMap[i+1]:
-            ratio = (rpm - rpmMap[i]) / (rpmMap[i+1] - rpmMap[i])
-            return advanceMap[i] + ratio * (advanceMap[i+1] - advanceMap[i])
+        if rpmMap[i] <= rpm <= rpmMap[i + 1]:
+            ratio = (rpm - rpmMap[i]) / (rpmMap[i + 1] - rpmMap[i])
+            return advanceMap[i] + ratio * (advanceMap[i + 1] - advanceMap[i])
     return advanceMap[0]
 
-# INTERFACE INTERATIVA (HTML + CSS + JS)
 HTML_INTERFACE = """
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -32,159 +31,71 @@ HTML_INTERFACE = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulador CDI - Protótipo Arrancada 2T</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body {
-            background-color: #0b0e14;
-            color: #c9d1d9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px 0;
-            overflow-y: auto;
+            background-color: #0b0e14; color: #c9d1d9;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; padding: 20px 0; overflow-y: auto;
         }
-
         .container {
-            position: relative;
-            background: rgba(17, 22, 30, 0.9);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(56, 139, 253, 0.2);
-            border-radius: 20px;
-            padding: 30px;
-            width: 92%;
-            max-width: 550px;
+            position: relative; background: rgba(17, 22, 30, 0.9);
+            backdrop-filter: blur(12px); border: 1px solid rgba(56, 139, 253, 0.2);
+            border-radius: 20px; padding: 30px; width: 92%; max-width: 550px;
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
         }
-
         h1 {
-            font-size: 1.6rem;
-            color: #58a6ff;
-            text-align: center;
-            margin-bottom: 25px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
+            font-size: 1.6rem; color: #58a6ff; text-align: center; margin-bottom: 25px;
+            text-transform: uppercase; letter-spacing: 1.5px;
             text-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
         }
-
         h2 {
-            font-size: 1.1rem;
-            color: #f0883e;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            border-left: 3px solid #f0883e;
-            padding-left: 8px;
+            font-size: 1.1rem; color: #f0883e; margin-bottom: 15px;
+            text-transform: uppercase; border-left: 3px solid #f0883e; padding-left: 8px;
         }
-
         .panel {
-            background: rgba(30, 37, 48, 0.5);
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 25px;
+            background: rgba(30, 37, 48, 0.5); border: 1px solid #30363d;
+            border-radius: 12px; padding: 20px; margin-bottom: 25px;
         }
-
-        .control-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            font-size: 0.9rem;
-            margin-bottom: 8px;
-            color: #8b949e;
-        }
-
+        .control-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; margin-bottom: 8px; color: #8b949e; }
         .rpm-display {
-            font-size: 2.4rem;
-            font-weight: bold;
-            color: #58a6ff;
-            text-align: center;
-            margin-bottom: 12px;
-            font-family: 'Courier New', Courier, monospace;
+            font-size: 2.4rem; font-weight: bold; color: #58a6ff;
+            text-align: center; margin-bottom: 12px; font-family: 'Courier New', Courier, monospace;
         }
-
         input[type="range"] {
-            width: 100%;
-            height: 8px;
-            border-radius: 5px;
-            background: #21262d;
-            outline: none;
-            -webkit-appearance: none;
+            width: 100%; height: 8px; border-radius: 5px; background: #21262d;
+            outline: none; -webkit-appearance: none;
         }
-
         input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background: #58a6ff;
-            cursor: pointer;
+            -webkit-appearance: none; width: 22px; height: 22px;
+            border-radius: 50%; background: #58a6ff; cursor: pointer;
         }
-
         .auto-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;
         }
-
         .input-field input {
-            width: 100%;
-            background: #0d1117;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            padding: 8px;
-            color: #c9d1d9;
-            text-align: center;
-            font-size: 1rem;
+            width: 100%; background: #0d1117; border: 1px solid #30363d;
+            border-radius: 6px; padding: 8px; color: #c9d1d9; text-align: center; font-size: 1rem;
         }
-
         .btn {
-            width: 100%;
-            background: #238636;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 12px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
+            width: 100%; background: #238636; color: white; border: none;
+            border-radius: 6px; padding: 12px; font-size: 1rem; font-weight: bold;
+            cursor: pointer; text-transform: uppercase;
         }
-
         .btn.stop { background: #da3633; }
-
         .results {
-            background: rgba(1, 4, 9, 0.7);
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid #30363d;
+            background: rgba(1, 4, 9, 0.7); border-radius: 12px; padding: 20px; border: 1px solid #30363d;
         }
-
         .result-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(48, 54, 61, 0.5);
-            font-size: 1rem;
+            display: flex; justify-content: space-between; padding: 10px 0;
+            border-bottom: 1px solid rgba(48, 54, 61, 0.5); font-size: 1rem;
         }
-
         .result-item:last-child { border-bottom: none; }
         .label { color: #8b949e; }
         .value { font-weight: bold; color: #f0883e; font-family: monospace; }
-        
         .status-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: bold;
+            display: inline-block; padding: 4px 10px; border-radius: 6px;
+            font-size: 0.8rem; font-weight: bold;
         }
         .status-running { background: #238636; color: white; }
         .status-limit { background: #da3633; color: white; }
@@ -192,10 +103,9 @@ HTML_INTERFACE = """
     </style>
 </head>
 <body>
-
     <div class="container">
         <h1>Biel CDI Drag-Sim</h1>
-        
+
         <div class="panel">
             <h2>Controle Manual</h2>
             <div class="control-group">
@@ -252,14 +162,15 @@ HTML_INTERFACE = """
 
         function updateMetrics(rpm) {
             rpmValue.innerText = Math.round(rpm) + " RPM";
-            
+            slider.value = rpm;
+
             fetch(`/calculate?rpm=${rpm}`)
                 .then(res => res.json())
                 .then(data => {
                     document.getElementById('valAdvance').innerText = data.advance.toFixed(2) + " °";
                     document.getElementById('valTimePerRev').innerText = data.time_per_rev_ms.toFixed(2) + " ms";
                     document.getElementById('valDwellDeg').innerText = data.dwell_degrees.toFixed(2) + " °";
-                    
+
                     const badge = document.getElementById('statusBadge');
                     if (data.cut_active) {
                         badge.innerText = "CORTE DE GIRO! ⚠️";
@@ -271,11 +182,17 @@ HTML_INTERFACE = """
                         badge.innerText = "OPERANDO";
                         badge.className = "status-badge status-running";
                     }
-                });
+                })
+                .catch(err => console.error("Erro ao calcular:", err));
         }
 
         slider.addEventListener('input', (e) => {
-            if (autoInterval) clearInterval(autoInterval);
+            if (autoInterval) {
+                clearInterval(autoInterval);
+                autoInterval = null;
+                btnTrigger.innerText = "Iniciar Puxada 🏁";
+                btnTrigger.classList.remove('stop');
+            }
             updateMetrics(e.target.value);
         });
 
@@ -292,7 +209,12 @@ HTML_INTERFACE = """
             const rStart = parseFloat(document.getElementById('rpmInit').value);
             const rEnd = parseFloat(document.getElementById('rpmEnd').value);
             const duration = parseFloat(document.getElementById('runTime').value) * 1000;
-            
+
+            if (isNaN(rStart) || isNaN(rEnd) || isNaN(duration) || duration <= 0) {
+                alert("Valores inválidos!");
+                return;
+            }
+
             const fps = 30;
             const intervalTime = 1000 / fps;
             const totalSteps = duration / intervalTime;
@@ -303,4 +225,65 @@ HTML_INTERFACE = """
 
             autoInterval = setInterval(() => {
                 currentStep++;
-                let progress = currentStep / totalSteps;
+                let progress = Math.min(currentStep / totalSteps, 1);
+                // interpolação linear
+                let currentRpm = rStart + (rEnd - rStart) * progress;
+
+                updateMetrics(currentRpm);
+
+                if (progress >= 1) {
+                    clearInterval(autoInterval);
+                    autoInterval = null;
+                    btnTrigger.innerText = "Iniciar Puxada 🏁";
+                    btnTrigger.classList.remove('stop');
+                }
+            }, intervalTime);
+        });
+
+        // inicializa com 1000 RPM
+        updateMetrics(1000);
+    </script>
+</body>
+</html>
+"""
+
+@app.route("/")
+def index():
+    return render_template_string(HTML_INTERFACE)
+
+@app.route("/calculate")
+def calculate():
+    try:
+        rpm = float(request.args.get("rpm", 1000))
+    except (TypeError, ValueError):
+        rpm = 1000.0
+
+    advance = get_advance_from_map(rpm)
+
+    # Tempo de uma volta em milissegundos
+    if rpm > 0:
+        time_per_rev_ms = 60000.0 / rpm
+    else:
+        time_per_rev_ms = 0.0
+
+    # Dwell em graus (360° * dwell_time / tempo_da_volta)
+    # dwell_time em segundos = DWELL_US / 1_000_000
+    dwell_seconds = DWELL_US / 1_000_000.0
+    if time_per_rev_ms > 0:
+        dwell_degrees = (dwell_seconds / (time_per_rev_ms / 1000.0)) * 360.0
+    else:
+        dwell_degrees = 0.0
+
+    cut_active = rpm >= MAX_RPM
+
+    return jsonify({
+        "rpm": rpm,
+        "advance": advance,
+        "time_per_rev_ms": time_per_rev_ms,
+        "dwell_degrees": dwell_degrees,
+        "cut_active": cut_active
+    })
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
