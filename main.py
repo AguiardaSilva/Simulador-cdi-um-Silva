@@ -226,7 +226,6 @@ HTML_INTERFACE = """
             autoInterval = setInterval(() => {
                 currentStep++;
                 let progress = Math.min(currentStep / totalSteps, 1);
-                // interpolação linear
                 let currentRpm = rStart + (rEnd - rStart) * progress;
 
                 updateMetrics(currentRpm);
@@ -260,14 +259,11 @@ def calculate():
 
     advance = get_advance_from_map(rpm)
 
-    # Tempo de uma volta em milissegundos
     if rpm > 0:
         time_per_rev_ms = 60000.0 / rpm
     else:
         time_per_rev_ms = 0.0
 
-    # Dwell em graus (360° * dwell_time / tempo_da_volta)
-    # dwell_time em segundos = DWELL_US / 1_000_000
     dwell_seconds = DWELL_US / 1_000_000.0
     if time_per_rev_ms > 0:
         dwell_degrees = (dwell_seconds / (time_per_rev_ms / 1000.0)) * 360.0
